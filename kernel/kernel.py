@@ -75,7 +75,7 @@ class gameArea:
             matrix.insert(0, [0 for j in xrange(self.len_x)])
         self.matrix = matrix
 
-    def show(self):
+    def paint(self):
         for i in self.matrix:
             line = ''
             for j in i:
@@ -85,9 +85,9 @@ class gameArea:
                     line += ' '
             print '|', line, '|'
 
-class kvartis:
+class gameZone:
     def __init__(self):
-        self.area = gameArea(6, 20)
+        self.area = gameArea(10, 20)
         self.figure = gameFigure(self.area)
 
     def paint(self):
@@ -125,10 +125,3 @@ class kvartis:
                 except gameExceptLose:
                     print 'You loser!!!'
                     sys.exit()
-
-#area = gameArea(10, 20)
-#figure = gameFigure(area, y = 1)
-#area.show()
-#print area.matrix
-game = kvartis()
-game.run(0.1)
