@@ -65,10 +65,10 @@ class gameWidget(QGLWidget):
         glLightModeli(GL_LIGHT_MODEL_TWO_SIDE, GL_TRUE)
         glEnable(GL_COLOR_MATERIAL)
         glEnable(GL_LIGHTING)
-        glLightfv(GL_LIGHT0, GL_POSITION, (0.5, 1, -0.2))
-        glLightfv(GL_LIGHT0, GL_SPOT_DIRECTION, (-1, -1, 0.3, 1))
-        glLightfv(GL_LIGHT0, GL_DIFFUSE, (1, 1, 1, 1))
-        glEnable(GL_LIGHT0)
+        glLightfv(GL_LIGHT2, GL_POSITION, (0.5, 1, -0.2))
+        glLightfv(GL_LIGHT2, GL_SPOT_DIRECTION, (-1, -1, 0.3, 1))
+        glLightfv(GL_LIGHT2, GL_DIFFUSE, (1, 1, 1, 1))
+        glEnable(GL_LIGHT2)
         glLightfv(GL_LIGHT1, GL_POSITION, (-0.5, 1, -0.2))
         glLightfv(GL_LIGHT1, GL_SPOT_DIRECTION, (1, -1, 0.3, 1))
         glLightfv(GL_LIGHT1, GL_DIFFUSE, (1, 1, 1, 1))
@@ -105,6 +105,16 @@ class gameWidget(QGLWidget):
                 self.rz += d
             elif event.key() == QtCore.Qt.Key_X:
                 self.rz -= d
+            elif event.key() == QtCore.Qt.Key_1:
+                if glIsEnabled(GL_LIGHT1):
+                    glDisable(GL_LIGHT1)
+                else:
+                    glEnable(GL_LIGHT1)
+            elif event.key() == QtCore.Qt.Key_2:
+                if glIsEnabled(GL_LIGHT2):
+                    glDisable(GL_LIGHT2)
+                else:
+                    glEnable(GL_LIGHT2)
 #            elif event.key() == QtCore.Qt.Key_A:
 #                self.ry -= 20
 #            elif event.key() == QtCore.Qt.Key_D:
