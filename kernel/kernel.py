@@ -54,21 +54,26 @@ class gameFigure:
             figure = rotateFigure(moveFigure(self.figure, x = i), direct)
             if self.movable(figure):
                 self.figure = figure
-                return 1
+                return True
         raise gameExceptMove
 
     def move(self, x = 0, y = 0):
         figure = moveFigure(self.figure, x, y)
-        if not self.movable(figure):
-            raise gameExceptMove
-        self.figure = figure
+        if self.movable(figure):
+            self.figure = figure
+            return True
+        raise gameExceptMove
+
+    def attachToArea(self):
+        for fig in self.figure:
+            self.area.matrix[fig[1]][fig[0]] = self.cell        
+        self.area.clearLines()
 
     def moveDown(self):
         try:
             self.move(y = 1)
         except gameExceptMove:
-            for fig in self.figure:
-                self.area.matrix[fig[1]][fig[0]] = self.cell
+            self.attachToArea()
             raise gameExceptDestroy
 
 class gameArea:
@@ -99,7 +104,6 @@ class gameArea:
 class gameZone:
     def __init__(self):
         self.area = gameArea(10, 20)
-        self.next_figure = gameFigure(self.area)
         self.newFigure()
 
     def paint(self):
@@ -118,16 +122,18 @@ class gameZone:
             self.area.matrix[fig[1]][fig[0]] = 0
 
     def newFigure(self, x = None, y = 2, fig_id = -1):
-        self.figure = self.next_figure
+        try:
+            self.figure = self.next_figure
+        except AttributeError:
+            self.figure = gameFigure(self.area, x, y, fig_id)            
         self.next_figure = gameFigure(self.area, x, y, fig_id)
-        for i in xrange(random.randint(0, 3)):
-            self.next_figure.rotate()
+#        for i in xrange(random.randint(0, 3)):
+#            self.next_figure.rotate()
 
     def moveDown(self):
         try:
             self.figure.moveDown()
         except gameExceptDestroy:
-            self.area.clearLines()
             self.newFigure()
             raise gameExceptNewFigure
 

@@ -1,7 +1,8 @@
 import kernel
 from glObjects import *
 import random
-from PyQt4 import QtCore
+from PySide import QtCore
+from cPickle import dumps, loads
 
 cube_size = 0.05
 blind_y = 3
@@ -35,6 +36,12 @@ class glFigure(kernel.gameFigure):
                 break
             figure = ghost
 
+    def dump(self):
+        return dumps(self.figure)
+
+    def load(self, dump):
+        self.figure = loads(str(dump))
+
 class glArea(kernel.gameArea):
     def __init__(self, len_x, len_y, pos_x, pos_y, pos_z):
         kernel.gameArea.__init__(self, len_x, len_y + blind_y)
@@ -51,18 +58,26 @@ class glArea(kernel.gameArea):
 #                    drawCube(cube_size, x*cube_size + self.x, y*cube_size + self.y, -cube_size + self.z, cell.color, cell.blend)
                     drawCube(cube_size, x*cube_size + self.x, y*cube_size + self.y, -cube_size + self.z, (0.2, 0.6, 0.9))
 
+    def dump(self):
+        return dumps(self.matrix)
+
+    def load(self, dump):
+        self.matrix = loads(str(dump))
+
 class glZone(kernel.gameZone):
     def __init__(self, x, y, z, len_x = 10, len_y = 20):
 #        kernel.gameZone.__init__(self)
         self.area = glArea(len_x, len_y, x, y, z)
-        self.next_figure = glFigure(self.area)
         self.newFigure()
 
     def newFigure(self, x = None, y = 2, fig_id = -1, color = (1, 1, 1)):
-        self.figure = self.next_figure
+        try:
+            self.figure = self.next_figure
+        except AttributeError:
+            self.figure = glFigure(self.area, x, y, fig_id, color = [random.random() for i in xrange(3)])
         self.next_figure = glFigure(self.area, x, y, fig_id, color = [random.random() for i in xrange(3)])
-        for i in xrange(random.randint(0, 3)):
-            self.next_figure.rotate()
+#        for i in xrange(random.randint(0, 3)):
+#            self.next_figure.rotate()
 
     def paint(self):
         self.area.paint()
@@ -70,3 +85,11 @@ class glZone(kernel.gameZone):
 #        self.figure.paintGhost()
         self.next_figure.paint(self.area.x, self.area.y - 0.2, 0, force = True)
 
+    def dump(self):
+        return dumps((self.area.dump(), self.figure.dump(), self.next_figure.dump()))
+
+    def load(self, dump):
+        area, figure, next_figure = loads(str(dump))
+        self.area.load(area)
+        self.figure.load(figure)
+        self.next_figure.load(next_figure)
