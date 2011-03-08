@@ -6,6 +6,29 @@ class netException(kernel.gameException): pass
 class netExceptRunServer(netException): pass
 class netExceptConnectToHost(netException): pass
 
+class netSocket(QtCore.QTcpSocket):
+    def connectToHost(self, host, port):
+        QtCore.QTcpSocket.connectToHost(self, host, port)
+        return self.waitToConnected(30)
+
+class gameServer(QtCore.QTcpServer):
+    sockets = []
+    receive = QtCore.Signal(str)
+    newConnected = QtCore.Signal()
+    newConnected = QtCore.Signal()
+
+    def runServer(self, port):
+        self.newConnection.connect(self.newConnect)
+        return self.listen(port = port)
+
+    def newConnect(self):
+        socket = self.nextPendingConnection()
+        socket.disconnected.connect(self.delConnect(len(self.sockets)))
+        self.socket.readyRead.connect(self.receiveMessage(len(self.sockets)))
+        self.newConnected.emit()
+
+    def delConnect(self):
+        del self
 
 class gameSocket(QtCore.QObject):
     connected = False
