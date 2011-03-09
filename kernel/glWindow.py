@@ -33,7 +33,7 @@ class gameWidget(QGLWidget):
 #            glVertex3f(0, -0.1, -0.7)
 #        glEnd()
 
-        for zone in self.zones:
+        for zone in self.zones.values():
             zone.paint()
         glFlush()
 

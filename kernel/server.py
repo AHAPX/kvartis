@@ -1,125 +1,60 @@
-from PyQt4 import QtCore, QtGui, QtNetwork
+from PySide import QtCore, QtNetwork
 import kernel
 
 class netException(kernel.gameException): pass
 class netExceptRunServer(netException): pass
+class netExceptConnectToHost(netException): pass
 
-class gameSocket():
-    def runServer(self, port):
-        self.server = QtNetwork.QTcpServer()
-        QtCore.QObject.connect(self.server, QtCore.SIGNAL('newConnection()'), self.addConnect)
-        if self.server.listen(port = port):
-            return True
-        raise netExceptRunServer
+class gameServer(QtNetwork.QTcpServer):
+    counter = 0
+    sockets = {}
+    newConnected = QtCore.Signal()
+    delConnected = QtCore.Signal(int)
+    receive = QtCore.Signal(int, str)
 
-    def addConnect(self):
-        self.socket = self.server.nextPendingConnection()
-        QtCore.QObject.connect(self.socket, QtCore.SIGNAL('disconnected()'), self.delConnect)
-        QtCore.QObject.connect(self.socket, QtCore.SIGNAL('readyRead()'), self.receiveMessage)
+    def runServer(self, port = 8128):
+        self.newConnection.connect(self.newConnect)
+        if not self.listen(port = port):
+            raise netExceptRunServer
 
-    def delConnect(self):
-        del self.socket
-
-    def connectToHost(self, host, port):
-        self.socket = QtNetwork.QTcpSocket()
-        self.socket.connectToHost(host, port)
-        QtCore.QObject.connect(self.socket, QtCore.SIGNAL('disconnected()'), self.disconnectFromHost)
-        QtCore.QObject.connect(self.socket, QtCore.SIGNAL('readyRead()'), self.receiveMessage)
-
-    def disconnectFromHost(self):
-        self.socket.disconnectFromHost()
-
-    def sendMessage(self, message):
-        self.socket.write(message)
-
-    def receiveMessage(self):
-        print str(self.socket.readAll())
-
-
-class myServer(QtGui.QWidget):
-    def __init__(self, width, height):
-        QtGui.QWidget.__init__(self)
-        self.setFixedSize(width, height)
-        layout = QtGui.QVBoxLayout()
-        self.label1 = QtGui.QLabel()
-        self.label2 = QtGui.QLabel()
-        self.button1 = QtGui.QPushButton('New server')
-        self.button2 = QtGui.QPushButton('Connect to server')
-
-        self.edit1 = QtGui.QLineEdit()
-        self.button3 = QtGui.QPushButton('Send')
-        self.label_mesg = QtGui.QLabel()
-        self.button3.setDefault(True)
-
-        group = QtGui.QGroupBox()
-        layout_chat = QtGui.QVBoxLayout()
-        layout_chat.addWidget(self.edit1)
-        layout_chat.addWidget(self.button3)
-        layout_chat.addWidget(self.label_mesg)
-        layout_chat.addStretch()
-        group.setLayout(layout_chat)
-
-        self.edit1.setEnabled(False)
-        self.button3.setEnabled(False)
-        layout.addWidget(self.label1)
-        layout.addWidget(self.label2)
-        layout.addWidget(self.button1)
-        layout.addWidget(self.button2)
-        layout.addWidget(group)
-        self.setLayout(layout)
-        QtCore.QObject.connect(self.button1, QtCore.SIGNAL('clicked()'), self.newServer)
-        QtCore.QObject.connect(self.button2, QtCore.SIGNAL('clicked()'), self.connectToServer)
-        QtCore.QObject.connect(self.button3, QtCore.SIGNAL('clicked()'), self.sendMessage)
-
-    def newServer(self):
-        self.server = QtNetwork.QTcpServer()
-        QtCore.QObject.connect(self.server, QtCore.SIGNAL('newConnection()'), self.newConnect)
-        if self.server.listen(port = 8765):
-            self.label1.setText('Server active')
-        else:
-            self.label1.setText('Error')
-
-    def connectToServer(self):
-        self.socket = QtNetwork.QTcpSocket()
-        self.socket.connectToHost('localhost', 8765)
-        self.label1.setText('Connect to server')
-        self.button2.setText('Disconnect')
-        QtCore.QObject.connect(self.socket, QtCore.SIGNAL('disconnected()'), self.disconnect)
-        QtCore.QObject.connect(self.button2, QtCore.SIGNAL('clicked()'), self.disconnect)
-        QtCore.QObject.connect(self.socket, QtCore.SIGNAL('readyRead()'), self.readMessage)
-        self.edit1.setEnabled(True)
-        self.button3.setEnabled(True)
-
-    def disconnect(self):
-        self.socket.disconnectFromHost()
-        self.label1.setText('')
-        self.button2.setText('Connect to server')
-        QtCore.QObject.connect(self.button2, QtCore.SIGNAL('clicked()'), self.connectToServer)
-        self.edit1.setEnabled(False)
-        self.button3.setEnabled(False)
+    def stopServer(self):
+        self.stop()
 
     def newConnect(self):
-        self.socket = self.server.nextPendingConnection()
-        QtCore.QObject.connect(self.socket, QtCore.SIGNAL('disconnected()'), self.delConnect)
-        QtCore.QObject.connect(self.socket, QtCore.SIGNAL('readyRead()'), self.readMessage)
-        self.label2.setText('Connect')
-        self.edit1.setEnabled(True)
-        self.button3.setEnabled(True)
+        self.sockets[self.counter] = self.nextPendingConnection()
+        self.sockets[self.counter].disconnected.connect(self.delConnect(self.counter))
+        self.sockets[self.counter].readyRead.connect(self.receiveMessage(self.counter))
+        self.newConnected.emit()
+        for sock in self.sockets.keys()[:-1]:
+            self.sockets[self.counter].write('%s,newConnect|' % sock)
+        self.writeToAll('%s,newConnect|' % self.counter, self.counter)
+        self.counter += 1
 
-    def delConnect(self):
-        self.label2.setText('')
-        self.edit1.setEnabled(False)
-        self.button3.setEnabled(False)
+    def delConnect(self, socket_id):
+        def temp():
+            del self.sockets[socket_id]
+            self.writeToAll('%s,delConnect|' % socket_id)
+            self.delConnected.emit(socket_id)
+        return temp
 
-    def sendMessage(self):
-        self.socket.write(str(self.edit1.text()))
-        self.edit1.setText('')
-
-    def readMessage(self):
-        self.label_mesg.setText(str(self.socket.readAll()))
+    def receiveMessage(self, socket_id):
+        def temp():
+            message = str(self.sockets[socket_id].readAll())
+            for m in message.split('|'):
+                if m:
+#                print msg
+                    sock_id, msg = m.split(',', 1)
+                    msg = '%s,%s|' % (socket_id, msg)
+                    if sock_id == '*':
+#                        print 'hell', sock_id
+                        self.writeToAll(msg, socket_id)
+                    else:
+                        self.sockets[int(sock_id)].write(msg)
+            self.receive.emit(socket_id, message)
+        return temp
         
-if __name__ == '__main__':
-    app = QtGui.QApplication(['serv'])
-    window = myServer(200, 250)
-    window.show()
-    app.exec_()
+    def writeToAll(self, message, exclude_socket = None):
+        for i in self.sockets.keys():
+            if i != exclude_socket:
+                self.sockets[i].write(message)
+
