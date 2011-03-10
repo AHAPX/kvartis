@@ -12,13 +12,14 @@ class gameServer(QtNetwork.QTcpServer):
     delConnected = QtCore.Signal(int)
     receive = QtCore.Signal(int, str)
 
-    def runServer(self, port = 8128):
+    def runServer(self, port = 8128, max_connect = 30):
+        self.setMaxPendingConnections(max_connect)
         self.newConnection.connect(self.newConnect)
         if not self.listen(port = port):
             raise netExceptRunServer
 
     def stopServer(self):
-        self.stop()
+        self.close()
 
     def newConnect(self):
         self.sockets[self.counter] = self.nextPendingConnection()

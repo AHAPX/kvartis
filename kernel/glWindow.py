@@ -6,10 +6,8 @@ from PySide import QtGui, QtCore
 from PySide.QtOpenGL import *
 from glObjects import *
 
-d = 1
-
-class gameWidget(QGLWidget):
-    zones = ()
+class gameGLWidget(QGLWidget):
+    zone = None
 
     def __init__(self, parent, width, height):
         QGLWidget.__init__(self, parent)
@@ -32,9 +30,8 @@ class gameWidget(QGLWidget):
 #        else:
 #            glVertex3f(0, -0.1, -0.7)
 #        glEnd()
-
-        for zone in self.zones.values():
-            zone.paint()
+        if self.zone:
+            self.zone.paint()
         glFlush()
 
     def resizeGL(self, w, h):
@@ -50,7 +47,7 @@ class gameWidget(QGLWidget):
         glMatrixMode(GL_MODELVIEW)
     
     def initializeGL(self):
-#        glViewport(0, 0, self.width, self.height)
+#        glViewport(0, 0, 1280, 768)
         glMatrixMode(GL_PROJECTION)
         glEnable(GL_DEPTH_TEST);
 #        glEnable(GL_CULL_FACE);
