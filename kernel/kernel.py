@@ -67,7 +67,6 @@ class gameFigure:
     def attachToArea(self):
         for fig in self.figure:
             self.area.matrix[fig[1]][fig[0]] = self.cell        
-        self.area.clearLines()
 
     def moveDown(self):
         try:
@@ -87,9 +86,11 @@ class gameArea:
         for line in self.matrix:
             if not reduce(lambda a, b: a and b, line):
                 matrix.append(line)
-        for i in xrange(self.len_y-len(matrix)):
+        cleared = self.len_y - len(matrix)
+        for i in xrange(cleared):
             matrix.insert(0, [None for j in xrange(self.len_x)])
         self.matrix = matrix
+        return cleared
 
     def paint(self):
         for i in self.matrix:
@@ -134,6 +135,7 @@ class gameZone:
         try:
             self.figure.moveDown()
         except gameExceptDestroy:
+            self.area.clearLines()
             self.newFigure()
             raise gameExceptNewFigure
 
