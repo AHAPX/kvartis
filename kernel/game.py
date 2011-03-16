@@ -11,9 +11,7 @@ class gameWidget(QtGui.QWidget):
 
     def __init__(self, width, height, len_x, len_y, count_op = 0):
         QtGui.QWidget.__init__(self)
-#        QtGui.QMainWindow.__init__(self)
         self.setFixedSize(width*(count_op + 1), height)
-#        self.setMinimumSize(width, height)       
 
         self.len_x, self.len_y = len_x, len_y
         self.socket = None
@@ -92,7 +90,7 @@ class gameWidget(QtGui.QWidget):
                     zone.figure.rotate(-1)
                 elif msg.startswith('next_figure:'):
                     zone.newFigure()
-                    zone.next_figure.load(msg.split(':', 1)[1])
+                    zone.next_fig[0].load(msg.split(':', 1)[1])
                 elif msg == 'sync':
                     self.send('*,dump:%s|' % self.widgets['main'].zone.dump())
                 elif msg.startswith('dump:'):
@@ -114,7 +112,7 @@ class gameWidget(QtGui.QWidget):
             self.timer.stop()
         except kernel.gameExceptNewFigure:
             self.send('*,attach|')
-            self.send('*,next_figure:%s|' % self.widgets['main'].zone.next_figure.dump())
+            self.send('*,next_figure:%s|' % self.widgets['main'].zone.next_fig[0].dump())
             self.timer.stop()
             self.timer.start(500)
         self.widgets['main'].updateGL()

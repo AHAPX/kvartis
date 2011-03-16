@@ -1,4 +1,4 @@
-import kernel
+from kernel import *
 from glObjects import *
 import random
 from PySide import QtCore
@@ -12,10 +12,31 @@ class glGameCube():
         self.color = color
         self.blend = blend
 
-class glFigure(kernel.gameFigure):
-    def __init__(self, area, x = None, y = 1, fig_id = -1, color = (1, 1, 1)):
-        kernel.gameFigure.__init__(self, area, x, y, fig_id)
+class glFigure(gameFigure, QtCore.QObject):
+    rotated, moved, unmovable = QtCore.Signal(), QtCore.Signal(), QtCore.Signal()
+
+    def __init__(self, area, x = None, y = 1, fig = None, color = (1, 1, 1)):
+        QtCore.QObject.__init__(self)
+        gameFigure.__init__(self, area, x, y, fig)
         self.cell = glGameCube(color)
+
+    def rotate(self, direct = 1):
+        try:
+            gameFigure.rotate(self, direct)
+            self.rotated.emit()
+            return True
+        except gameExceptMove:
+            self.unmovable.emit()
+            raise gameExceptMove
+
+    def move(self, x = 0, y = 0):
+        try:
+            gameFigure.move(self, x, y)
+#            self.moved.emit()
+            return True
+        except gameExceptMove:
+            self.unmovable.emit()
+            raise gameExceptMove
 
     def paint(self, x = None, y = None, z = None, force = None):
         if not x: x = self.area.x
@@ -29,7 +50,7 @@ class glFigure(kernel.gameFigure):
         x, y, z = self.area.x, self.area.y, self.area.z
         figure = self.figure
         for i in xrange(1, self.area.len_y):
-            ghost = kernel.moveFigure(self.figure, y = i)
+            ghost = moveFigure(self.figure, y = i)
             if not self.movable(ghost):
                 for cell in figure:
                     drawCube(cube_size, cell[0]*cube_size + x, cell[1]*cube_size + y, -cube_size + z, self.cell.color, 0.3)
@@ -42,12 +63,21 @@ class glFigure(kernel.gameFigure):
     def load(self, dump):
         self.figure = loads(str(dump))
 
-class glArea(kernel.gameArea):
+class glArea(gameArea, QtCore.QObject):
+    cleared = QtCore.Signal(int)
+
     def __init__(self, len_x, len_y, pos_x, pos_y, pos_z):
-        kernel.gameArea.__init__(self, len_x, len_y + blind_y)
+        QtCore.QObject.__init__(self)
+        gameArea.__init__(self, len_x, len_y + blind_y)
         self.x = pos_x
         self.y = pos_y
         self.z = pos_z
+
+    def clearLines(self):
+        count = gameArea.clearLines(self)
+        if count:
+            self.cleared.emit(count)
+        return count
 
     def paint(self):
         drawFrame(cube_size, self.x, self.y + blind_y*cube_size, self.z, self.len_x, self.len_y - blind_y, 1, (0, 0.8, 0.5))
@@ -64,32 +94,44 @@ class glArea(kernel.gameArea):
     def load(self, dump):
         self.matrix = loads(str(dump))
 
-class glZone(kernel.gameZone):
-    def __init__(self, x, y, z, len_x = 10, len_y = 20):
-#        kernel.gameZone.__init__(self)
-        self.area = glArea(len_x, len_y, x, y, z)
-        self.newFigure()
+class glZone(gameZone, QtCore.QObject):
+    figRotated, figMoved, figUnmovable, areaCleared = QtCore.Signal(), QtCore.Signal(), QtCore.Signal(), QtCore.Signal(int)
 
-    def newFigure(self, x = None, y = 2, fig_id = -1, color = (1, 1, 1)):
-        try:
-            self.figure = self.next_figure
-        except AttributeError:
-            self.figure = glFigure(self.area, x, y, fig_id, color = [random.random() for i in xrange(3)])
-        self.next_figure = glFigure(self.area, x, y, fig_id, color = [random.random() for i in xrange(3)])
-#        for i in xrange(random.randint(0, 3)):
-#            self.next_figure.rotate()
+    def __init__(self, x, y, z, len_x = 10, len_y = 20, next_count = 1):
+        QtCore.QObject.__init__(self)
+        self.area = glArea(len_x, len_y, x, y, z)
+        self.next_count = next_count
+        self.next_fig = self.getNextFigures(self.area, count = self.next_count + 1)
+        self.figure = self.next_fig.pop(0)
+        self.area.cleared.connect(self.areaCleared)
+        self.figure.rotated.connect(self.figRotated)
+        self.figure.moved.connect(self.figMoved)
+        self.figure.unmovable.connect(self.figUnmovable)
+
+    def newFigure(self):
+        gameZone.newFigure(self)
+        self.figure.rotated.connect(self.figRotated)
+        self.figure.moved.connect(self.figMoved)
+        self.figure.unmovable.connect(self.figUnmovable)        
+
+    def getNextFigures(self, area, next = [], count = 1):
+        for i in xrange(count - len(next)):
+            next.append(glFigure(area))
+        return next
 
     def paint(self):
         self.area.paint()
         self.figure.paint()
 #        self.figure.paintGhost()
-        self.next_figure.paint(self.area.x, self.area.y - 0.2, 0, force = True)
+        self.next_fig[0].paint(self.area.x, self.area.y - 0.2, 0, force = True)
 
     def dump(self):
-        return dumps((self.area.dump(), self.figure.dump(), self.next_figure.dump()))
+        return dumps((self.area.dump(), self.figure.dump(), self.next_fig[0].dump()))
 
     def load(self, dump):
-        area, figure, next_figure = loads(str(dump))
+        area, figure, next_fig = loads(str(dump))
         self.area.load(area)
         self.figure.load(figure)
-        self.next_figure.load(next_figure)
+        self.next_fig = self.getNextFigures(self.area, count = self.next_count + 1)
+        self.next_fig[0].load(next_fig) 
+

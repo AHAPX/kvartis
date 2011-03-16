@@ -40,7 +40,7 @@ class gameGLWidget(QGLWidget):
         glClearDepth(5.0)
         glMatrixMode(GL_PROJECTION)
         glLoadIdentity()
-        gluPerspective(45.0, 1, 0.1, 100.0)
+        gluPerspective(45.0, 1, 0.3, 100.0)
 #        glFrustum(-1.0, 1.0, -1.0, 1.0, 1, 10)
         glOrtho(-1, 1, -1, 1, 1, 2)
 #        gluLookAt(1, 0, 0, 0, 0, 0, -1, 0, 0)
@@ -52,6 +52,10 @@ class gameGLWidget(QGLWidget):
         glEnable(GL_DEPTH_TEST);
 #        glEnable(GL_CULL_FACE);
 #        glCullFace(GL_BACK)
+        self.bindTexture(QtGui.QImage('texture.bmp'))
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR)
+        glEnable(GL_TEXTURE_2D)
         glLoadIdentity()
 #        gluPerspective(45.0, self.width/self.height, 1.0, 100.0)
 #        glFrustum(-1.0, 1.0, 1.0, -1.0, 1.0, 10.0)

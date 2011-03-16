@@ -12,6 +12,9 @@ default_figures = {
     5: ((0, 0), (1, 0), (0, 1), (1, 1)),
     6: ((0, 0), (-1, 0), (1, 0), (0, 1))}
 
+def getFigure():
+    return random.choice(default_figures)
+
 def moveFigure(figure, x = 0, y = 0):
     return map(lambda a: (a[0] + x, a[1] + y), figure)
 
@@ -28,13 +31,14 @@ class gameExceptLose(gameException): pass
 class gameExceptNewFigure(gameException): pass
 
 class gameFigure:
-    def __init__(self, area, x = None, y = 0, fig_id = -1):
+    def __init__(self, area, x = None, y = 0, fig = None):
         self.cell = 1
         self.area = area
         if not x: x = int(area.len_x/2)
-        figure = default_figures.get(fig_id)
-        if not figure:
-            figure = random.choice(default_figures)
+        if fig:
+            figure = fig
+        else:
+            figure = getFigure()
         self.figure = map(lambda cell: (cell[0] + x, cell[1] + y), figure)
         if not self.movable(self.figure):
             raise gameExceptLose
@@ -46,7 +50,6 @@ class gameFigure:
         try:
             return reduce(lambda a, b: a and b, map(lambda a: (0 <= a[0] < self.area.len_x) and (0 <= a[1] < self.area.len_y), figure)) and (not reduce(lambda a, b: a or b, [self.area.matrix[cell[1]][cell[0]] for cell in figure]))
         except:
-            print figure
             raise gameExceptMove
 
     def rotate(self, direct = 1):
@@ -103,16 +106,17 @@ class gameArea:
             print '|', line, '|'
 
 class gameZone:
-    def __init__(self):
-        self.area = gameArea(10, 20)
-        self.newFigure()
+    def __init__(self, len_x = 10, len_y = 20, next_count = 1):
+        self.area = gameArea(len_x, len_y)
+        self.next_count = next_count
+        self.next_fig = getNextFigures(self.area, count = self.next_count + 1)
+        self.figure = self.next_fig.pop(0)
 
     def paint(self):
         os.system('clear')
         for fig in self.figure():
             self.area.matrix[fig[1]][fig[0]] = 1
         for i in self.area.matrix:
-            line = ''
             for j in i:
                 if j:
                     line += '#'
@@ -122,14 +126,9 @@ class gameZone:
         for fig in self.figure():
             self.area.matrix[fig[1]][fig[0]] = 0
 
-    def newFigure(self, x = None, y = 2, fig_id = -1):
-        try:
-            self.figure = self.next_figure
-        except AttributeError:
-            self.figure = gameFigure(self.area, x, y, fig_id)            
-        self.next_figure = gameFigure(self.area, x, y, fig_id)
-#        for i in xrange(random.randint(0, 3)):
-#            self.next_figure.rotate()
+    def newFigure(self):
+        self.figure = self.next_fig.pop(0)
+        self.next_fig = self.getNextFigures(self.area, self.next_fig, self.next_count)
 
     def moveDown(self):
         try:
@@ -138,6 +137,11 @@ class gameZone:
             self.area.clearLines()
             self.newFigure()
             raise gameExceptNewFigure
+
+    def getNextFigures(self, area, next = [], count = 1):
+        for i in xrange(count - len(next)):
+            next.append(gameFigure(area))
+        return next
 
     def run(self, timeout):
         while True:
