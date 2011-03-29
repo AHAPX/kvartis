@@ -9,7 +9,8 @@ def drawCube(size, x, y, z, color = (1, 1, 1), blend = 1):
     glMaterialfv(GL_BACK, GL_DIFFUSE, (0, 1, 0))
 
     glBegin(GL_QUADS)
-    glColor4f(r, g, b, blend)
+    glColor4f(1, 1, 1, blend)
+#    glColor4f(r, g, b, blend)
 
     glNormal(0, 0, 1)
 

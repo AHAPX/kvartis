@@ -2,6 +2,8 @@ import glWindow
 from PySide import QtCore, QtGui, QtNetwork
 import glkernel, kernel, server, random
 
+from modes.singleSimple import gameMode
+
 class netException(kernel.gameException): pass
 class netExceptRunServer(netException): pass
 class netExceptConnectToHost(netException): pass
@@ -17,6 +19,7 @@ class gameWidget(QtGui.QWidget):
         self.socket = None
         self.widgets = {'main': glWindow.gameGLWidget(self, width, height)}
         self.widgets['main'].zone = glkernel.glZone(-glkernel.cube_size*len_x/2, -glkernel.cube_size*len_y/2, -0.6, len_x, len_y)
+        self.widgets['main'].mode = gameMode(self.widgets['main'].zone, self.widgets['main'])
 
         self.timer = QtCore.QTimer(self)
         self.timer.timeout.connect(self.moveDown)
@@ -115,7 +118,7 @@ class gameWidget(QtGui.QWidget):
             self.send('*,next_figure:%s|' % self.widgets['main'].zone.next_fig[0].dump())
             self.timer.stop()
             self.timer.start(500)
-        self.widgets['main'].updateGL()
+        self.paint()
 
     def keyPressEvent(self, event):
         try:
@@ -138,9 +141,12 @@ class gameWidget(QtGui.QWidget):
                 x = random.randint(300, 1000)
                 self.setFixedSize(x, x)
 #                self.setMaximumWidth(300)
-            self.widgets['main'].updateGL()
+            self.paint()
         except:
             pass
+
+    def paint(self):
+        self.widgets['main'].updateGL()
 
 class mainWindow(QtGui.QMainWindow):
     game_widget = None

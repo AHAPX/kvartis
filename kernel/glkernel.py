@@ -109,15 +109,19 @@ class glZone(gameZone, QtCore.QObject):
         self.figure.unmovable.connect(self.figUnmovable)
 
     def newFigure(self):
+#        self.figure.rotated.disconnect()
+#        self.figure.moved.disconnect()
+#        self.figure.unmovable.disconnect()
         gameZone.newFigure(self)
         self.figure.rotated.connect(self.figRotated)
         self.figure.moved.connect(self.figMoved)
         self.figure.unmovable.connect(self.figUnmovable)        
 
     def getNextFigures(self, area, next = [], count = 1):
+        next_res = next[:]
         for i in xrange(count - len(next)):
-            next.append(glFigure(area))
-        return next
+            next_res.append(glFigure(area))
+        return next_res
 
     def paint(self):
         self.area.paint()

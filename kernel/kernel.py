@@ -139,9 +139,10 @@ class gameZone:
             raise gameExceptNewFigure
 
     def getNextFigures(self, area, next = [], count = 1):
+        next_res = next[:]
         for i in xrange(count - len(next)):
-            next.append(gameFigure(area))
-        return next
+            next_res.append(gameFigure(area))
+        return next_res
 
     def run(self, timeout):
         while True:

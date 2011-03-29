@@ -8,6 +8,7 @@ from glObjects import *
 
 class gameGLWidget(QGLWidget):
     zone = None
+    r = 0
 
     def __init__(self, parent, width, height):
         QGLWidget.__init__(self, parent)
@@ -18,10 +19,15 @@ class gameGLWidget(QGLWidget):
     def paintGL(self):
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
         glLoadIdentity()
+        glEnable(GL_TEXTURE_2D)
+#        glLoadIdentity()
+        if self.mode:
+            self.mode.paint()
         glMultMatrixf(((1, 0, 0, 0), (0, -1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1)))
 #        gluLookAt(self.rx, self.ry, self.rz, 0, 0, -self.rz, 0, 3, 0)
         glColor4f(1, 1, 1, 1)
 
+#        glPopMatrix()
 #        glBegin(GL_TRIANGLES)
 #        glVertex3f(-0.1, 0, -0.7)
 #        glVertex3f(0.1, 0, -0.7)
@@ -30,6 +36,8 @@ class gameGLWidget(QGLWidget):
 #        else:
 #            glVertex3f(0, -0.1, -0.7)
 #        glEnd()
+#        self.bindTexture(self.cube_texture)
+        glDisable(GL_TEXTURE_2D)
         if self.zone:
             self.zone.paint()
         glFlush()
@@ -52,9 +60,9 @@ class gameGLWidget(QGLWidget):
         glEnable(GL_DEPTH_TEST);
 #        glEnable(GL_CULL_FACE);
 #        glCullFace(GL_BACK)
-        self.bindTexture(QtGui.QImage('texture.bmp'))
+        self.cube_texture = QtGui.QImage('texture.bmp')
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR)
+#        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR)
         glEnable(GL_TEXTURE_2D)
         glLoadIdentity()
 #        gluPerspective(45.0, self.width/self.height, 1.0, 100.0)
